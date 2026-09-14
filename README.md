@@ -31,9 +31,36 @@ The API contract is in [openapi.yaml](openapi.yaml). Setup, authentication, endp
 ```sh
 cd backend
 uv sync --locked
-export TABLETURN_STAFF_PASSWORD='choose-a-local-password'
+export TABLETURN_STAFF_USERNAME=host
+export TABLETURN_STAFF_PASSWORD='TableTurn-demo-2026!'
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-access-log
 ```
+
+### Homework demo login
+
+After starting the backend with the configuration above, sign in with:
+
+- **Username:** `host`
+- **Password:** `TableTurn-demo-2026!`
+
+These are public, demo-only credentials for local homework evaluation. The app does not set this password automatically; configure it before starting the backend. Use a different password for a deployed restaurant.
+
+There is no password-change screen. Change `TABLETURN_STAFF_PASSWORD` in your terminal environment and restart the backend to set a new password.
+
+Alternatively, create a local `backend/.env` file containing:
+
+```dotenv
+TABLETURN_STAFF_USERNAME=host
+TABLETURN_STAFF_PASSWORD=TableTurn-demo-2026!
+```
+
+From `backend/`, load that file explicitly when starting:
+
+```sh
+uv run --env-file .env uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-access-log
+```
+
+To change the password with this setup, edit `.env` and restart the backend. The `.env` file is ignored by Git.
 
 Run endpoint tests with `uv run pytest -q` from `backend/`. The database persists across restarts. See backend/README.md for DATABASE_URL and initialization details.
 
