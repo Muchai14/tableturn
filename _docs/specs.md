@@ -4,7 +4,9 @@ Version: 1.0
 
 Date: September 13, 2026
 
-Status: Ready for implementation planning
+Status: Backend implementation in progress
+
+Implementation update: the user subsequently requested FastAPI with uv, followed by persistent SQLAlchemy storage. This supersedes the original Django implementation plan below; product behavior is unchanged. The root `openapi.yaml` defines the current API contract, including session/CSRF endpoints. The frontend in `frontent/` connects to the backend through a centralized API client; the default local API origin is http://127.0.0.1:8001.
 
 ## 1. Product definition
 
@@ -192,13 +194,13 @@ Warm white surfaces, charcoal text, teal primary actions, amber review indicator
 
 ## 9. Technical architecture
 
-- Python/Django application with responsive server-rendered templates and lightweight JavaScript.
-- PostgreSQL for persistent data and transactional updates.
+- Python/FastAPI backend managed with uv; a separate frontend communicates through the OpenAPI contract.
+- Replaceable in-memory SQLAlchemy database for the current phase; PostgreSQL and durable storage are deferred.
 - Same-origin endpoints for dashboard actions and periodic status refreshes.
-- Framework-managed staff password hashing, sessions, and CSRF protection.
-- HTTPS deployment with application server and managed database; hosting provider selected at implementation time.
+- Hashed staff credentials, HttpOnly cookie sessions, and CSRF protection on mutations.
+- HTTPS deployment and durable database hosting are deferred; the current mock runs as one local process.
 - Pin supported dependency versions during setup. This specification does not prescribe version numbers.
-- No SMS service, audio service, native app, or separate frontend application required.
+- No SMS service, audio service, or native app required.
 
 ### 9.1 Data model
 

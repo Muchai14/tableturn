@@ -6,7 +6,7 @@ A mobile-friendly restaurant waitlist manager for one restaurant, with a shared 
 
 Read [_docs/specs.md](_docs/specs.md) for the full MVP requirements, screens, workflows, data model, and acceptance criteria. [AGENTS.md](AGENTS.md) provides guidance for future development.
 
-This repository starts with project documentation. The existing local application implementation is not included in this initial commit.
+This repository contains a working frontend in `frontent/` connected to a FastAPI backend with persistent SQLAlchemy storage. All browser API calls are centralized in `frontent/src/api.js`.
 
 ## MVP scope
 
@@ -20,12 +20,32 @@ This repository starts with project documentation. The existing local applicatio
 
 No texts, phone-number collection, sound alerts, reservations, table maps, multiple locations, or guest editing.
 
-## Planned architecture
+## Architecture
 
-Python and Django, PostgreSQL, and responsive server-rendered pages with lightweight JavaScript. The server owns queue state and timestamps; visible pages refresh periodically.
+The current backend uses Python, FastAPI, and uv, as requested after the initial specification. A repository interface isolates SQLAlchemy storage. SQLite is the default; DATABASE_URL selects other SQLAlchemy-supported databases. The server owns queue state and timestamps.
 
 ## Development status
 
-The specification is ready for implementation planning. This documentation-only repository has no runnable application or test commands yet. Add accurate setup and verification instructions when implementation is imported.
+The API contract is in [openapi.yaml](openapi.yaml). Setup, authentication, endpoint details, and database replacement instructions are in [backend/README.md](backend/README.md).
+
+```sh
+cd backend
+uv sync --locked
+export TABLETURN_STAFF_PASSWORD='choose-a-local-password'
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-access-log
+```
+
+Run endpoint tests with `uv run pytest -q` from `backend/`. The database persists across restarts. See backend/README.md for DATABASE_URL and initialization details.
 
 Before restaurant launch, configure the restaurant name and timezone, hosting and domain, production staff credentials, database backups, and data retention.
+
+## Start the frontend
+
+In a second terminal, from the repository root (Node.js 20+):
+
+```sh
+cd frontent
+npm run dev
+```
+
+Open [the host desk](http://127.0.0.1:5173/staff) or [guest sign-up](http://127.0.0.1:5173/join). The frontend calls **http://127.0.0.1:8001** directly. Sign in with the backend credentials you configured above. See [frontent/README.md](frontent/README.md) for configuration and tests.

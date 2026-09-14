@@ -1,0 +1,1030 @@
+openapi: 3.1.0
+info:
+  title: TableTurn API
+  version: 1.0.0
+  description: 'Contract derived from _docs/specs.md. FastAPI implementation uses
+    a SQLAlchemy repository with persistent storage configured through DATABASE_URL.
+    No texting, phone numbers, or audio. Bootstrap GET /api/auth/session, then send
+    credentials cookies and X-CSRF-Token on mutations. Business mutations also require
+    Idempotency-Key.'
+servers:
+- url: http://127.0.0.1:8001
+  description: Local API
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Check API process health
+      description: ''
+      security: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/session:
+    get:
+      operationId: getSession
+      summary: Get or create a browser session and CSRF token
+      description: Creates an anonymous HttpOnly session cookie when absent or expired.
+        No staff login is required. Use the returned csrf_token on mutations.
+      security: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: Sign in to the shared staff account
+      description: Requires an anonymous session and matching X-CSRF-Token. Rotates
+        the session and CSRF token on success; use the new token for subsequent mutations.
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: CSRF token or origin rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Staff credentials are not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+  /api/auth/logout:
+    post:
+      operationId: logout
+      summary: Invalidate the staff session
+      description: ''
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: CSRF token or origin rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/public-settings:
+    get:
+      operationId: publicSettings
+      summary: Read public waitlist settings
+      description: ''
+      security: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/join:
+    post:
+      operationId: join
+      summary: Join the public waitlist
+      description: Available only while public sign-ups are open. Returns an unguessable
+        bearer status link. Names are not deduplicated; retries with the same key
+        create one party.
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      responses:
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinResult'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: CSRF token or origin rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 80
+        description: Reuse the same key and payload when retrying an ambiguous failure.
+          Reuse with a changed payload returns 409.
+  /api/status/{token}:
+    get:
+      operationId: guestStatus
+      summary: Read one private guest status
+      description: Read-only. Never returns other guest names, staff-only actions,
+        event history, or another status URL.
+      security: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestStatus'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/staff/queue:
+    get:
+      operationId: staffQueue
+      summary: Read active queues and recently completed parties
+      description: Waiting is ordered by original join order; ready by ready_at. Recent
+        contains at most 20 terminal parties updated in the last 24 hours. Expiry
+        only sets overdue, never a terminal state.
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/staff/parties:
+    post:
+      operationId: addParty
+      summary: Host adds a party even when public sign-ups are closed
+      description: ''
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      responses:
+        '201':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyResult'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: CSRF token or origin rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 80
+        description: Reuse the same key and payload when retrying an ambiguous failure.
+          Reuse with a changed payload returns 409.
+  /api/staff/parties/{party_id}:
+    patch:
+      operationId: editParty
+      summary: Edit an active party without changing its order or timers
+      description: ''
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyResult'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: CSRF token or origin rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyEdit'
+      parameters:
+      - &id001
+        name: party_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 80
+        description: Reuse the same key and payload when retrying an ambiguous failure.
+          Reuse with a changed payload returns 409.
+  /api/staff/parties/{party_id}/actions:
+    post:
+      operationId: partyAction
+      summary: Apply a version-checked party transition
+      description: 'ready: Waiting → Ready and start 300s; seat: Ready → Seated; no_show:
+        overdue Ready → No-show; cancel: active → Cancelled; return: Ready → Waiting
+        in original order; undo: restore the latest terminal transition and its original
+        deadline. Invalid/stale transitions return 409. Replays never restart timers
+        or create events twice.'
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyResult'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: CSRF token or origin rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionInput'
+      parameters:
+      - *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 80
+        description: Reuse the same key and payload when retrying an ambiguous failure.
+          Reuse with a changed payload returns 409.
+  /api/staff/settings:
+    patch:
+      operationId: updateSettings
+      summary: Open or close public sign-ups
+      description: ''
+      security:
+      - sessionCookie: []
+        csrfHeader: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: CSRF token or origin rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict or invalid transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsInput'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 80
+        description: Reuse the same key and payload when retrying an ambiguous failure.
+          Reuse with a changed payload returns 409.
+  /api/staff/summary:
+    get:
+      operationId: dailySummary
+      summary: Read today’s summary in the restaurant timezone
+      description: Count current Seated/No-show parties by their terminal timestamp
+        on the restaurant-local calendar day. Average wait is the rounded mean of
+        joined-to-seated minutes, null when no parties are seated. Undo removes the
+        party from terminal totals.
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+        '401':
+          description: Staff authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tableturn_session
+      description: Opaque HttpOnly session cookie. Anonymous session required for
+        public mutations; authenticated session required for staff endpoints.
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: CSRF token returned by the session or login endpoint.
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required:
+          - code
+          - message
+      required:
+      - error
+    Health:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+        storage:
+          type: string
+          enum:
+          - memory
+          - sqlalchemy
+      required:
+      - status
+      - storage
+    Session:
+      type: object
+      additionalProperties: false
+      properties:
+        authenticated:
+          type: boolean
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+        csrf_token:
+          type: string
+          minLength: 32
+      required:
+      - authenticated
+      - username
+      - csrf_token
+    LoginInput:
+      type: object
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 80
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+      required:
+      - username
+      - password
+    Ok:
+      type: object
+      additionalProperties: false
+      properties:
+        ok:
+          type: boolean
+          const: true
+      required:
+      - ok
+    PartyInput:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        size:
+          type: integer
+          minimum: 1
+          maximum: 30
+      required:
+      - name
+      - size
+    PartyEdit:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        size:
+          type: integer
+          minimum: 1
+          maximum: 30
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - name
+      - size
+      - version
+    ActionInput:
+      type: object
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum:
+          - ready
+          - seat
+          - no_show
+          - cancel
+          - return
+          - undo
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - action
+      - version
+    SettingsInput:
+      type: object
+      additionalProperties: false
+      properties:
+        is_open:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - is_open
+      - version
+    Settings:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        timezone:
+          type: string
+        is_open:
+          type: boolean
+        max_party_size:
+          type: integer
+          minimum: 1
+          maximum: 30
+        grace_seconds:
+          type: integer
+          const: 300
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - name
+      - timezone
+      - is_open
+      - max_party_size
+      - grace_seconds
+      - version
+    JoinResult:
+      type: object
+      additionalProperties: false
+      properties:
+        status_url:
+          type: string
+          pattern: ^/status/[A-Za-z0-9_-]{43}$
+      required:
+      - status_url
+    Summary:
+      type: object
+      additionalProperties: false
+      properties:
+        seated:
+          type: integer
+          minimum: 0
+        no_shows:
+          type: integer
+          minimum: 0
+        average_wait:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        date:
+          type: string
+          format: date
+        timezone:
+          type: string
+      required:
+      - seated
+      - no_shows
+      - average_wait
+      - date
+      - timezone
+    GuestParty:
+      type: object
+      additionalProperties: false
+      properties:
+        id: &id002
+          type: string
+          format: uuid
+        name: &id003
+          type: string
+        size: &id004
+          type: integer
+          minimum: 1
+          maximum: 30
+        state: &id005
+          type: string
+          enum:
+          - waiting
+          - ready
+          - seated
+          - no_show
+          - cancelled
+        version: &id006
+          type: integer
+          minimum: 1
+        joined_at: &id007
+          type: string
+          format: date-time
+        deadline: &id008
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        overdue: &id009
+          type: boolean
+        ahead: &id010
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+      required:
+      - id
+      - name
+      - size
+      - state
+      - version
+      - joined_at
+      - deadline
+      - overdue
+      - ahead
+    StaffParty:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *id002
+        name: *id003
+        size: *id004
+        state: *id005
+        version: *id006
+        joined_at: *id007
+        deadline: *id008
+        overdue: *id009
+        ahead: *id010
+        ready_at: *id008
+        seated_at: *id008
+        no_show_at: *id008
+        cancelled_at: *id008
+        updated_at:
+          type: string
+          format: date-time
+        status_url:
+          type: string
+        can_undo:
+          type: boolean
+      required:
+      - id
+      - name
+      - size
+      - state
+      - version
+      - joined_at
+      - deadline
+      - overdue
+      - ahead
+      - ready_at
+      - seated_at
+      - no_show_at
+      - cancelled_at
+      - updated_at
+      - status_url
+      - can_undo
+    PartyResult:
+      type: object
+      additionalProperties: false
+      properties:
+        party:
+          $ref: '#/components/schemas/StaffParty'
+      required:
+      - party
+    GuestStatus:
+      type: object
+      additionalProperties: false
+      properties:
+        party:
+          $ref: '#/components/schemas/GuestParty'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - party
+      - server_time
+    Queue:
+      type: object
+      additionalProperties: false
+      properties:
+        waiting:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffParty'
+        ready:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffParty'
+        recent:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffParty'
+        settings:
+          $ref: '#/components/schemas/Settings'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - waiting
+      - ready
+      - recent
+      - settings
+      - server_time

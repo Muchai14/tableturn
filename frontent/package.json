@@ -1,0 +1,13 @@
+{
+  "name": "tableturn-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "start": "node dev-server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "build": "node build.mjs"
+  },
+  "engines": {"node": ">=20"}
+}
